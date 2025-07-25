@@ -1,0 +1,43 @@
+<!-- result.html -->
+<input type="number" id="inputId" placeholder="Введите ID от 1 до 20">
+<button onclick="getStatus()">Проверить</button>
+
+<div id="output"></div>
+
+<script>
+const table1Url = 'table1.html';
+const table2Url = 'table2.html';
+
+async function getStatus() {
+  const id = document.getElementById('inputId').value;
+  const output = document.getElementById('output');
+  output.innerHTML = 'Загрузка...';
+
+  try {
+    const [html1, html2] = await Promise.all([
+      fetch(table1Url).then(r => r.text()),
+      fetch(table2Url).then(r => r.text())
+    ]);
+
+    const parser = new DOMParser();
+    const doc1 = parser.parseFromString(html1, 'text/html');
+    const doc2 = parser.parseFromString(html2, 'text/html');
+
+    const row1 = doc1.querySelector(`#row-${id}`);
+    const row2 = doc2.querySelector(`#row-${id}`);
+
+    const status1 = row1 ? row1.cells[1].textContent : 'Нет данных';
+    const status2 = row2 ? row2.cells[1].textContent : 'Нет данных';
+
+    output.innerHTML = `
+      <table border="1">
+        <tr><th>ID</th><th>Статус склада</th><th>Статус клиента</th></tr>
+        <tr><td>${id}</td><td>${status1}</td><td>${status2}</td></tr>
+      </table>
+    `;
+  } catch (err) {
+    output.innerHTML = 'Ошибка загрузки данных.';
+    console.error(err);
+  }
+}
+</script>
