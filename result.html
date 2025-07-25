@@ -1,43 +1,101 @@
 <!-- result.html -->
-<input type="number" id="inputId" placeholder="Введите ID от 1 до 3">
+<input type="number" id="inputId" placeholder="Введите ID от 1 до 17">
 <button onclick="getStatus()">Проверить</button>
-
-<div id="output"></div>
+<div id="output" style="margin-top: 20px;"></div>
+<canvas id="fireworks" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 9999;"></canvas>
 
 <script>
 const table1Url = 'table1.html';
 const table2Url = 'table2.html';
 
+document.getElementById('inputId').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') getStatus();
+});
+
 async function getStatus() {
-  const id = document.getElementById('inputId').value;
+  const id = document.getElementById('inputId').value.trim();
   const output = document.getElementById('output');
+  const canvas = document.getElementById('fireworks');
   output.innerHTML = 'Загрузка...';
+  canvas.style.display = 'none';
 
-  try {
-    const [html1, html2] = await Promise.all([
-      fetch(table1Url).then(r => r.text()),
-      fetch(table2Url).then(r => r.text())
-    ]);
+  const [html1, html2] = await Promise.all([
+    fetch(table1Url).then(r => r.text()),
+    fetch(table2Url).then(r => r.text())
+  ]);
 
-    const parser = new DOMParser();
-    const doc1 = parser.parseFromString(html1, 'text/html');
-    const doc2 = parser.parseFromString(html2, 'text/html');
+  const parser = new DOMParser();
+  const doc1 = parser.parseFromString(html1, 'text/html');
+  const doc2 = parser.parseFromString(html2, 'text/html');
 
-    const row1 = doc1.querySelector(`#row-${id}`);
-    const row2 = doc2.querySelector(`#row-${id}`);
+  const row1 = doc1.querySelector(`#row-${id}`);
+  const row2 = doc2.querySelector(`#row-${id}`);
 
-    const status1 = row1 ? row1.cells[1].textContent : 'Нет данных';
-    const status2 = row2 ? row2.cells[1].textContent : 'Нет данных';
-
-    output.innerHTML = `
-      <table border="1">
-        <tr><th>ID</th><th>Статус склада</th><th>Статус клиента</th></tr>
-        <tr><td>${id}</td><td>${status1}</td><td>${status2}</td></tr>
-      </table>
-    `;
-  } catch (err) {
-    output.innerHTML = 'Ошибка загрузки данных.';
-    console.error(err);
+  if (!row1 || !row2) {
+    output.innerHTML = 'ID не найден';
+    return;
   }
+
+  const status1 = row1.cells[1].textContent;
+  const status2 = row2.cells[1].textContent;
+
+  const match = (status1 === 'Отгружено' && status2 === 'Получено');
+
+  output.innerHTML = `
+    <table border="1">
+      <tr><th>ID</th><th>Статус склада</th><th>Статус клиента</th></tr>
+      <tr><td>${id}</td><td>${status1}</td><td>${status2}</td></tr>
+    </table>
+    <div style="font-size: 48px; text-align: center; margin-top: 20px;">
+      ${match ? '🎉 Всё отлично! 🎉' : '😞 Что-то не так 😞'}
+    </div>
+  `;
+
+  if (match) {
+    canvas.style.display = 'block';
+    runFireworks();
+  }
+}
+
+function runFireworks() {
+  const canvas = document.getElementById('fireworks');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const particles = [];
+
+  for (let i = 0; i < 100; i++) {
+    particles.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: Math.random() * 2 + 1,
+      color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+      speed: Math.random() * 5 + 1,
+      angle: Math.random() * Math.PI * 2
+    });
+  }
+
+  let frame = 0;
+  function animate() {
+    if (frame > 60) {
+      canvas.style.display = 'none';
+      return;
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let p of particles) {
+      const dx = Math.cos(p.angle) * p.speed;
+      const dy = Math.sin(p.angle) * p.speed;
+      p.x += dx;
+      p.y += dy;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    }
+    frame++;
+    requestAnimationFrame(animate);
+  }
+  animate();
 }
 </script>
