@@ -1,8 +1,20 @@
-<!-- result.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Проверка статуса</title>
+</head>
+<body>
+
 <input type="number" id="inputId" placeholder="Введите ID от 1 до 17">
 <button onclick="getStatus()">Проверить</button>
 <div id="output" style="margin-top: 20px;"></div>
+
+<!-- Холст для фейерверка -->
 <canvas id="fireworks" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 9999;"></canvas>
+
+<!-- Аудио для праздника -->
+<audio id="success-audio" src="success.mp3" preload="auto"></audio>
 
 <script>
 const table1Url = 'table1.html';
@@ -16,6 +28,8 @@ async function getStatus() {
   const id = document.getElementById('inputId').value.trim();
   const output = document.getElementById('output');
   const canvas = document.getElementById('fireworks');
+  const audio = document.getElementById('success-audio');
+
   output.innerHTML = 'Загрузка...';
   canvas.style.display = 'none';
 
@@ -54,6 +68,12 @@ async function getStatus() {
   if (match) {
     canvas.style.display = 'block';
     runFireworks();
+
+    // Проиграть музыку
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(err => console.warn("Не удалось воспроизвести музыку:", err));
+    }
   }
 }
 
@@ -99,3 +119,6 @@ function runFireworks() {
   animate();
 }
 </script>
+
+</body>
+</html>
